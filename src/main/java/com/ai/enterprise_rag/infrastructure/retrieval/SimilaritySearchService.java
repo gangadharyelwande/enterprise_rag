@@ -16,41 +16,93 @@ public class SimilaritySearchService {
             LoggerFactory.getLogger(SimilaritySearchService.class);
 
     private final VectorStore vectorStore;
+    private final QueryRewriteService queryRewriteService;
 
-    public SimilaritySearchService(VectorStore vectorStore) {
+    public SimilaritySearchService(QueryRewriteService queryRewriteService,
+                                   VectorStore vectorStore) {
+        this.queryRewriteService = queryRewriteService;
         this.vectorStore = vectorStore;
     }
 
-    // Basic semantic search
+    // Basic semantic search with query rewriting
     public List<Document> search(String question) {
-        return search(question, null, null, null, 3);
+
+        logger.info("========== RETRIEVAL START ==========");
+        logger.info("Original question: '{}'", question);
+
+        String rewrittenQuery = queryRewriteService.rewrite(question);
+
+        logger.info("Retrieval query: '{}'", rewrittenQuery);
+
+        return search(
+                rewrittenQuery,
+                null,
+                null,
+                null,
+                3
+        );
     }
 
     // Metadata-filtered semantic search
-    public List<Document> search(String question, String category,
-                                 String department, String documentType,
+    public List<Document> search(String question,
+                                 String category,
+                                 String department,
+                                 String documentType,
                                  int topK) {
 
-        if (topK <= 0)
-            throw new IllegalArgumentException("topK must be greater than 0");
+        if (question == null || question.isBlank()) {
+            throw new IllegalArgumentException("Question must not be blank");
+        }
 
-        String filter = buildFilter(category, department, documentType);
+        if (topK <= 0) {
+            throw new IllegalArgumentException("topK must be greater than 0");
+        }
+
+        String filter =
+                buildFilter(category, department, documentType);
+
+        logger.info("Retrieval configuration | topK={} | threshold={} | filter={}",
+                topK, 0.75, filter);
 
         SearchRequest.Builder builder = SearchRequest.builder()
                 .query(question)
                 .topK(topK)
                 .similarityThreshold(0.75);
 
-        if (filter != null)
+        if (filter != null) {
             builder.filterExpression(filter);
+        }
 
         List<Document> results =
                 vectorStore.similaritySearch(builder.build());
 
-        logger.info("Question: '{}', Top-K: {}, Filter: {}, Results: {}",
-                question, topK, filter, results.size());
+        logger.info("Retrieved {} chunks", results.size());
+
+        logRetrievedChunks(results);
+
+        logger.info("========== RETRIEVAL END ==========");
 
         return results;
+    }
+
+    private void logRetrievedChunks(List<Document> results) {
+
+        if (results.isEmpty()) {
+            logger.warn("NO RELEVANT CHUNKS FOUND");
+            return;
+        }
+
+        for (int i = 0; i < results.size(); i++) {
+
+            Document document = results.get(i);
+
+            logger.info(
+                    "Chunk #{} | id={} | metadata={}",
+                    i + 1,
+                    document.getId(),
+                    document.getMetadata()
+            );
+        }
     }
 
     private String buildFilter(String category, String department,

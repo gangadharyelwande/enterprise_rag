@@ -26,5 +26,19 @@ public class VectorStoreService {
         vectorStore.add(chunks);
 
         logger.info("Stored {} chunks in vector database", chunks.size());
+
+//        Document Chunks
+//              ↓
+//        vectorStore.add(chunks)
+//              ↓
+//        EmbeddingModel
+//              ↓
+//        Embedding API / Model
+//              ↓
+//        Vector (numbers)
+//              ↓
+//        Qdrant Vector Database
+//              ↓
+//        Vector + Chunk Text + Metadata
     }
 }
