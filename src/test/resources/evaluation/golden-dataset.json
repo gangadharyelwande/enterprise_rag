@@ -1,0 +1,500 @@
+{
+  "datasetName": "EazyBytes HR Policy RAG Golden Dataset",
+  "version": "v1",
+
+  "sourceDocument": {
+    "name": "EAZYBYTES HR POLICY MANUAL",
+    "description": "Evaluation source for the current Enterprise RAG learning project."
+  },
+
+  "cases": [
+
+    {
+      "id": "Q01",
+      "question": "What are EazyBytes' standard working hours?",
+      "type": "simple_factual",
+
+      "relevantSections": [
+        "§4 Working Hours and Attendance"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Standard hours are 2:00 PM to 11:00 PM, Monday-Friday.",
+        "expectedEvidence": [
+          "2:00 PM to 11:00 PM",
+          "Monday-Friday"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "Standard working hours are 2:00 PM to 11:00 PM, Monday-Friday.",
+      "validated": true,
+      "validationNotes": "Directly supported by §4.",
+      "evaluationNotes": "Baseline factual retrieval test."
+    },
+
+    {
+      "id": "Q02",
+      "question": "How many casual leave days are provided per year?",
+      "type": "simple_factual",
+
+      "relevantSections": [
+        "§5 Leave Policy"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Casual Leave (CL): 8 days/year.",
+        "expectedEvidence": [
+          "8 days/year"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "Employees receive 8 casual leave days per year.",
+      "validated": true,
+      "validationNotes": "Directly supported by §5.",
+      "evaluationNotes": "Tests exact numeric retrieval."
+    },
+
+
+    {
+      "id": "Q03",
+      "question": "How many sick leave days are provided per year?",
+      "type": "simple_factual",
+
+      "relevantSections": [
+        "§5 Leave Policy"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Sick Leave (SL): 8 days/year.",
+        "expectedEvidence": [
+          "8 days/year"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "Employees receive 8 sick leave days per year.",
+      "validated": true,
+      "validationNotes": "Directly supported by §5.",
+      "evaluationNotes": "Tests retrieval of a specific leave value."
+    },
+
+
+    {
+      "id": "Q04",
+      "question": "How many earned leave days are provided per year?",
+      "type": "simple_factual",
+
+      "relevantSections": [
+        "§5 Leave Policy"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Earned Leave (EL): 15 days/year.",
+        "expectedEvidence": [
+          "15 days/year"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "Employees receive 15 earned leave days per year.",
+      "validated": true,
+      "validationNotes": "Directly supported by §5.",
+      "evaluationNotes": "Tests numeric precision."
+    },
+
+
+    {
+      "id": "Q05",
+      "question": "How long is the probation period for new hires?",
+      "type": "simple_factual",
+
+      "relevantSections": [
+        "§3 Employment Policies"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "New hires have a probation period of 3-6 months depending on role.",
+        "expectedEvidence": [
+          "3-6 months",
+          "depending on role"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "The probation period is 3-6 months, depending on the role.",
+      "validated": true,
+      "validationNotes": "The range and role dependency must both be preserved.",
+      "evaluationNotes": "Tests retrieval of a qualified numeric range."
+    },
+
+
+    {
+      "id": "Q06",
+      "question": "What is the policy regarding Performance Improvement Plans?",
+      "type": "exact_terminology",
+
+      "relevantSections": [
+        "§7 Performance Management"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Underperformance is handled with PIP (performance improvement plans).",
+        "expectedEvidence": [
+          "underperformance",
+          "PIP",
+          "performance improvement plans"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "Underperformance is handled using Performance Improvement Plans (PIPs).",
+      "validated": true,
+      "validationNotes": "Directly supported by §7.",
+      "evaluationNotes": "Tests policy terminology."
+    },
+
+
+    {
+      "id": "Q07",
+      "question": "What does PIP stand for?",
+      "type": "exact_terminology",
+
+      "relevantSections": [
+        "§7 Performance Management"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "PIP is defined as performance improvement plans.",
+        "expectedEvidence": [
+          "performance improvement plans"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "PIP stands for Performance Improvement Plans.",
+      "validated": true,
+      "validationNotes": "Explicitly defined in §7.",
+      "evaluationNotes": "Exact terminology test."
+    },
+
+
+    {
+      "id": "Q08",
+      "question": "What is the required resignation notice period?",
+      "type": "exact_terminology",
+
+      "relevantSections": [
+        "§14 Exit Policy"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Minimum 36-day notice is required for resignation.",
+        "expectedEvidence": [
+          "36-day notice"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "The minimum resignation notice period is 36 days.",
+      "validated": true,
+      "validationNotes": "Only the minimum notice requirement is needed for this question.",
+      "evaluationNotes": "Tests exact policy number."
+    },
+
+
+    {
+      "id": "Q09",
+      "question": "How long does HR have to respond to a grievance?",
+      "type": "exact_terminology",
+
+      "relevantSections": [
+        "§13 Grievance Redressal"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "HR responds within 48 business hours.",
+        "expectedEvidence": [
+          "48 business hours"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "HR responds to a grievance within 48 business hours.",
+      "validated": true,
+      "validationNotes": "Directly supported by §13.",
+      "evaluationNotes": "Tests exact time-window retrieval."
+    },
+
+
+    {
+      "id": "Q10",
+      "question": "How many days per week can employees work from home?",
+      "type": "exact_terminology",
+
+      "relevantSections": [
+        "§12 Remote Work Policy"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Work from home is allowed 2 days/week.",
+        "expectedEvidence": [
+          "2 days/week"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "Employees may work from home 2 days per week.",
+      "validated": true,
+      "validationNotes": "Directly supported by §12.",
+      "evaluationNotes": "Tests exact numeric retrieval."
+    },
+
+
+    {
+      "id": "Q11",
+      "question": "How long is maternity leave?",
+      "type": "semantic_paraphrase",
+
+      "relevantSections": [
+        "§5 Leave Policy"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Maternity Leave: 26 weeks.",
+        "expectedEvidence": [
+          "26 weeks"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "Maternity leave is 26 weeks.",
+      "validated": true,
+      "validationNotes": "Uses paraphrased wording. Does not claim that the leave is paid because the source does not explicitly say that.",
+      "evaluationNotes": "Tests semantic retrieval."
+    },
+
+
+    {
+      "id": "Q12",
+      "question": "When should an employee notify the company about arriving late or being absent?",
+      "type": "semantic_paraphrase",
+
+      "relevantSections": [
+        "§4 Working Hours and Attendance"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Late arrivals, early departures, and absences must be informed in advance.",
+        "expectedEvidence": [
+          "informed in advance"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "Employees must inform the company in advance about late arrivals, early departures, or absences.",
+      "validated": true,
+      "validationNotes": "Directly supported by §4.",
+      "evaluationNotes": "Tests paraphrased policy language."
+    },
+
+
+    {
+      "id": "Q13",
+      "question": "What support does EazyBytes provide for learning and professional development?",
+      "type": "semantic_paraphrase",
+
+      "relevantSections": [
+        "§8 Employee Benefits"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Learning & Development includes a budget for courses, certifications, and conferences.",
+        "expectedEvidence": [
+          "budget",
+          "courses",
+          "certifications",
+          "conferences"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "EazyBytes provides a Learning & Development budget for courses, certifications, and conferences.",
+      "validated": true,
+      "validationNotes": "Directly supported by §8.",
+      "evaluationNotes": "Tests semantic matching."
+    },
+
+
+    {
+      "id": "Q14",
+      "question": "What should an employee do if they notice suspicious activity involving company data or systems?",
+      "type": "semantic_paraphrase",
+
+      "relevantSections": [
+        "§11 IT and Data Security Policy"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Employees must report data breaches or suspicious activity to IT immediately.",
+        "expectedEvidence": [
+          "report",
+          "IT",
+          "immediately",
+          "suspicious activity"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "They should report the suspicious activity to IT immediately.",
+      "validated": true,
+      "validationNotes": "Directly supported by §11.",
+      "evaluationNotes": "Tests semantic security-policy retrieval."
+    },
+
+
+    {
+      "id": "Q15",
+      "question": "What different types of leave are available and how many days or weeks does each provide?",
+      "type": "multi_chunk",
+
+      "relevantSections": [
+        "§5 Leave Policy"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "CL: 8 days/year; SL: 8 days/year; EL: 15 days/year; Maternity: 26 weeks; Paternity: 10 days; Unpaid Leave requires manager approval.",
+        "expectedEvidence": [
+          "CL 8 days/year",
+          "SL 8 days/year",
+          "EL 15 days/year",
+          "Maternity 26 weeks",
+          "Paternity 10 days",
+          "Unpaid Leave requires manager approval"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "The leave policy provides 8 CL days/year, 8 SL days/year, 15 EL days/year, 26 weeks of maternity leave, and 10 days of paternity leave. Unpaid leave requires manager approval.",
+      "validated": true,
+      "validationNotes": "Requires multiple facts from the leave policy.",
+      "evaluationNotes": "Important completeness test."
+    },
+
+
+    {
+      "id": "Q16",
+      "question": "What are the requirements for remote work?",
+      "type": "multi_chunk",
+
+      "relevantSections": [
+        "§12 Remote Work Policy"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "Remote work depends on job role and approval; work from home is 2 days/week; daily stand-ups and weekly check-ins are mandatory; secure internet/VPN is required.",
+        "expectedEvidence": [
+          "job role and approval",
+          "2 days/week",
+          "daily stand-ups",
+          "weekly check-ins",
+          "secure internet/VPN"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "Remote work depends on the job role and approval. Employees can work from home 2 days per week, must attend daily stand-ups and weekly check-ins, and must use secure internet/VPN.",
+      "validated": true,
+      "validationNotes": "Multiple requirements must be retrieved.",
+      "evaluationNotes": "Good multi-fact retrieval and context-compression test."
+    },
+
+
+    {
+      "id": "Q17",
+      "question": "What are the rules regarding workplace harassment and reporting misconduct?",
+      "type": "multi_chunk",
+
+      "relevantSections": [
+        "§10 Workplace Conduct and Anti-Harassment Policy"
+      ],
+
+      "groundTruth": {
+        "sourceEvidence": "There is zero tolerance for harassment/bullying; misconduct should be reported to HR immediately; complaints are handled confidentially and impartially.",
+        "expectedEvidence": [
+          "zero tolerance",
+          "report to HR immediately",
+          "confidentially",
+          "impartially"
+        ],
+        "answerable": true
+      },
+
+      "expectedAnswer": "EazyBytes has zero tolerance for harassment and bullying. Misconduct should be reported to HR immediately, and complaints are handled confidentially and impartially.",
+      "validated": true,
+      "validationNotes": "Multiple related policy statements must be retrieved.",
+      "evaluationNotes": "Tests retrieval completeness and grounding."
+    },
+
+
+    {
+      "id": "Q18",
+      "question": "What is the employee stock options policy?",
+      "type": "no_answer",
+
+      "relevantSections": [],
+
+      "groundTruth": {
+        "sourceEvidence": "No employee stock options policy is present in the HR manual.",
+        "expectedEvidence": [],
+        "answerable": false
+      },
+
+      "expectedAnswer": "The HR Policy Manual does not provide an employee stock options policy.",
+      "validated": true,
+      "validationNotes": "Intentional no-answer test.",
+      "evaluationNotes": "Tests hallucination resistance."
+    },
+
+
+    {
+      "id": "Q19",
+      "question": "What is the annual bonus percentage for each employee grade?",
+      "type": "no_answer",
+
+      "relevantSections": [],
+
+      "groundTruth": {
+        "sourceEvidence": "No annual bonus percentage by employee grade is present in the HR manual.",
+        "expectedEvidence": [],
+        "answerable": false
+      },
+
+      "expectedAnswer": "The HR Policy Manual does not specify annual bonus percentages by employee grade.",
+      "validated": true,
+      "validationNotes": "Intentional no-answer test.",
+      "evaluationNotes": "Tests hallucination resistance."
+    },
+
+
+    {
+      "id": "Q20",
+      "question": "What is the employee retirement age?",
+      "type": "no_answer",
+
+      "relevantSections": [],
+
+      "groundTruth": {
+        "sourceEvidence": "No employee retirement age is present in the HR manual.",
+        "expectedEvidence": [],
+        "answerable": false
+      },
+
+      "expectedAnswer": "The HR Policy Manual does not specify an employee retirement age.",
+      "validated": true,
+      "validationNotes": "Intentional no-answer test.",
+      "evaluationNotes": "Tests abstention behavior."
+    }
+  ]
+}

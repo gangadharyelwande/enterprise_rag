@@ -24,9 +24,11 @@ public class PdfDocumentLoader {
     @Value("classpath:Eazybytes_HR_Policies.pdf")
     private Resource policyFile;
 
-    public PdfDocumentLoader(DocumentChunker documentChunker,
-                             DocumentMetadataEnricher metadataEnricher,
-                             VectorStoreService vectorStoreService) {
+    public PdfDocumentLoader(
+            DocumentChunker documentChunker,
+            DocumentMetadataEnricher metadataEnricher,
+            VectorStoreService vectorStoreService) {
+
         this.documentChunker = documentChunker;
         this.metadataEnricher = metadataEnricher;
         this.vectorStoreService = vectorStoreService;
@@ -36,23 +38,35 @@ public class PdfDocumentLoader {
     public void loadPDF() {
 
         // PDF → Documents
-        TikaDocumentReader reader = new TikaDocumentReader(policyFile);
-        List<Document> documents = reader.get();
+        TikaDocumentReader reader =
+                new TikaDocumentReader(policyFile);
 
-        logger.info("PDF loaded: {} documents", documents.size());
+        List<Document> documents =
+                reader.get();
 
-        // Add metadata
+        logger.info(
+                "PDF loaded: {} documents",
+                documents.size()
+        );
+
+        // Add document-level metadata
         logger.info("Adding/Enriching Metadata");
-        documents = metadataEnricher.enrich(documents);
 
-        // Documents → Chunks
+        documents =
+                metadataEnricher.enrich(documents);
+
+        // Documents → Section-aware Chunks
         logger.info("Documents Chunking");
-        List<Document> chunks = documentChunker.chunk(documents);
+
+        List<Document> chunks =
+                documentChunker.chunk(documents);
 
         // Chunks → Embeddings → Vector DB
         vectorStoreService.store(chunks);
 
-        logger.info("Ingestion completed: {} chunks stored", chunks.size());
+        logger.info(
+                "Ingestion completed: {} chunks stored",
+                chunks.size()
+        );
     }
 }
-

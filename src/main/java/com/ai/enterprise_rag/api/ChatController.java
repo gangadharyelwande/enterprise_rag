@@ -12,49 +12,18 @@ import java.util.List;
 public class ChatController {
 
     private final SimilaritySearchService searchService;
-   // private final SimilaritySearchService searchService;
 
     public ChatController(SimilaritySearchService searchService) {
         this.searchService = searchService;
-      //  this.searchService = searchService;
     }
 
-    // Question → Query Embedding → Vector Search → Top-K Chunks
+    // Question → Rewrite → Vector + Keyword Search → Hybrid → Rerank → Top-K
     @GetMapping("/document/search")
     public ResponseEntity<List<Document>> search(
             @RequestParam String message) {
 
-        List<Document> results =
-                searchService.search(message);
+        List<Document> results = searchService.search(message);
 
         return ResponseEntity.ok(results);
-    }
-
-    /*
-     * Metadata-filtered search
-     *
-     * Example:
-     *
-     * /api/search/filtered
-     * ?question=What is the leave policy?
-     * &category=HR
-     * &department=HUMAN_RESOURCES
-     * &documentType=HR_POLICY
-     * &topK=3
-     */
-    @GetMapping("/search1/filtered")
-    public List<Document> filteredSearch( @RequestParam String question,
-            @RequestParam(required = false)String category,
-            @RequestParam(required = false)String department,
-            @RequestParam(required = false)String documentType,
-            @RequestParam(defaultValue = "3")int topK) {
-
-        return searchService.search(
-                question,
-                category,
-                department,
-                documentType,
-                topK
-        );
     }
 }
