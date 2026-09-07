@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eazybytes.example/schemas/golden-dataset.schema.json",
+  "title": "Enterprise RAG Golden Dataset",
+  "description": "Schema for validated RAG evaluation test cases.",
+  "type": "object",
+  "required": [
+    "datasetName",
+    "version",
+    "sourceDocument",
+    "cases"
+  ],
+  "properties": {
+    "datasetName": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "sourceDocument": {
+      "type": "object",
+      "required": [
+        "name",
+        "description"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/testCase"
+      }
+    }
+  },
+  "$defs": {
+    "testCase": {
+      "type": "object",
+      "required": [
+        "id",
+        "question",
+        "type",
+        "relevantSections",
+        "groundTruth",
+        "expectedAnswer",
+        "validated"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^Q[0-9]{2}$"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "simple_factual",
+            "exact_terminology",
+            "semantic_paraphrase",
+            "multi_chunk",
+            "no_answer"
+          ]
+        },
+        "relevantSections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "groundTruth": {
+          "type": "object",
+          "required": [
+            "sourceEvidence"
+          ],
+          "properties": {
+            "sourceEvidence": {
+              "type": "string"
+            },
+            "expectedEvidence": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "answerable": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "expectedAnswer": {
+          "type": "string"
+        },
+        "validated": {
+          "type": "boolean"
+        },
+        "validationNotes": {
+          "type": "string"
+        },
+        "evaluationNotes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
