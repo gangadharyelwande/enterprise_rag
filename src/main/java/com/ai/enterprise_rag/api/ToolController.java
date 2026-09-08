@@ -1,7 +1,6 @@
 package com.ai.enterprise_rag.api;
 
-import com.ai.enterprise_rag.advisor.LoggingAdvisor;
-import com.ai.enterprise_rag.infrastructure.tools.EmployeeLeaveTool;
+import com.ai.enterprise_rag.infrastructure.tools.EmployeeDatabaseTool;
 import com.ai.enterprise_rag.infrastructure.tools.EmployeeWorkingHoursTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,16 +16,16 @@ public class ToolController {
 
     private final ChatClient chatClient;
     private final EmployeeWorkingHoursTool employeeWorkingHoursTool;
-    private final EmployeeLeaveTool employeeLeaveTool;
+    private final EmployeeDatabaseTool employeeDatabaseTool;
 
     public ToolController(
             ChatClient chatClient,
             EmployeeWorkingHoursTool employeeWorkingHoursTool,
-            EmployeeLeaveTool employeeLeaveTool) {
+            EmployeeDatabaseTool employeeDatabaseTool) {
 
         this.chatClient = chatClient;
         this.employeeWorkingHoursTool = employeeWorkingHoursTool;
-        this.employeeLeaveTool = employeeLeaveTool;
+        this.employeeDatabaseTool = employeeDatabaseTool;
     }
 
     @GetMapping("/api/chat")
@@ -36,7 +35,7 @@ public class ToolController {
         return chatClient
                 .prompt()
                 .user(message)
-                .tools(employeeWorkingHoursTool, employeeLeaveTool)
+                .tools(employeeWorkingHoursTool, employeeDatabaseTool)
                 .call()
                 .content();
     }

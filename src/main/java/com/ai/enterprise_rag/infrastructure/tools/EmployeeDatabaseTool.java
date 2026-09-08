@@ -7,18 +7,18 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 @Component
-public class EmployeeLeaveTool {
+public class EmployeeDatabaseTool {
     private static final Logger logger =
-            LoggerFactory.getLogger(EmployeeLeaveTool.class);
+            LoggerFactory.getLogger(EmployeeDatabaseTool.class);
 
     private final EmployeeRepository employeeRepository;
 
-    public EmployeeLeaveTool(EmployeeRepository employeeRepository) {
+    public EmployeeDatabaseTool(EmployeeRepository employeeRepository) {
         this.employeeRepository = employeeRepository;
     }
 
     @Tool(description = "Get the remaining leave balance for an employee.")
-    public ToolResult<Employee> getEmployeeLeaveBalance(
+    public ToolResult<EmployeeResponse> getEmployeeLeaveBalance(
             @ToolParam(description = "Employee ID such as E101", required = true) String employeeId) {
 
         logger.info("Tool called: getEmployeeLeaveBalance, employeeId={}",employeeId);
@@ -38,8 +38,9 @@ public class EmployeeLeaveTool {
         // -----------------------------------------
         // 2. BUSINESS VALIDATION
         // -----------------------------------------
-
+        logger.info("Before calling H2 DB-->");
         var employee = employeeRepository.findById(normalizedEmployeeId);
+        logger.info("After calling H2 DB-->");
 
         if (employee.isEmpty()) {
             logger.warn("Business validation failed: employee not found, employeeId={}",normalizedEmployeeId);
@@ -51,13 +52,23 @@ public class EmployeeLeaveTool {
         // 3. EXECUTION
         // -----------------------------------------
 
-        Employee result = employee.get();
+        Employee employeeData = employee.get();
 
-        logger.info("Tool execution successful: employeeId={}, leaveBalance={}",
-                result.employeeId(),
-                result.leaveBalance()
+        EmployeeResponse response =
+                new EmployeeResponse(
+                        employeeData.getEmployeeId(),
+                        employeeData.getName(),
+                        employeeData.getDepartment(),
+                        employeeData.getLeaveBalance()
+                );
+
+        logger.info(
+                "Employee found: {}, leaveBalance={}",
+                response.employeeId(),
+                response.leaveBalance()
         );
 
-        return ToolResult.success(result);
+        // 4. Return structured result
+        return ToolResult.success(response);
     }
 }
