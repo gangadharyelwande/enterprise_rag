@@ -1,5 +1,6 @@
 package com.ai.enterprise_rag.api;
 
+import com.ai.enterprise_rag.infrastructure.tools.CurrentDateTimeTool;
 import com.ai.enterprise_rag.infrastructure.tools.EmployeeDatabaseTool;
 import com.ai.enterprise_rag.infrastructure.tools.EmployeeWorkingHoursTool;
 import org.slf4j.Logger;
@@ -17,15 +18,17 @@ public class ToolController {
     private final ChatClient chatClient;
     private final EmployeeWorkingHoursTool employeeWorkingHoursTool;
     private final EmployeeDatabaseTool employeeDatabaseTool;
+    private final CurrentDateTimeTool currentDateTimeTool;
 
     public ToolController(
             ChatClient chatClient,
             EmployeeWorkingHoursTool employeeWorkingHoursTool,
-            EmployeeDatabaseTool employeeDatabaseTool) {
+            EmployeeDatabaseTool employeeDatabaseTool, CurrentDateTimeTool currentDateTimeTool) {
 
         this.chatClient = chatClient;
         this.employeeWorkingHoursTool = employeeWorkingHoursTool;
         this.employeeDatabaseTool = employeeDatabaseTool;
+        this.currentDateTimeTool = currentDateTimeTool;
     }
 
     @GetMapping("/api/chat")
@@ -35,7 +38,7 @@ public class ToolController {
         return chatClient
                 .prompt()
                 .user(message)
-                .tools(employeeWorkingHoursTool, employeeDatabaseTool)
+                .tools(employeeWorkingHoursTool, employeeDatabaseTool, currentDateTimeTool)
                 .call()
                 .content();
     }
