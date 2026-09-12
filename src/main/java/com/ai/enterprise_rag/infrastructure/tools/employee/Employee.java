@@ -1,4 +1,4 @@
-package com.ai.enterprise_rag.infrastructure.tools;
+package com.ai.enterprise_rag.infrastructure.tools.employee;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

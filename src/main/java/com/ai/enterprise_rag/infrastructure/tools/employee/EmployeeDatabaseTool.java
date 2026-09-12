@@ -1,5 +1,6 @@
-package com.ai.enterprise_rag.infrastructure.tools;
+package com.ai.enterprise_rag.infrastructure.tools.employee;
 
+import com.ai.enterprise_rag.infrastructure.tools.ToolResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
