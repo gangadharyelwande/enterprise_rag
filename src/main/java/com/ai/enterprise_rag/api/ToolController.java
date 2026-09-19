@@ -10,6 +10,7 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.ai.tool.ToolCallback;
 
 @RestController
 public class ToolController {
@@ -49,6 +50,7 @@ public class ToolController {
             @RequestParam String message) {
 
         logger.info("===== NORMAL TOOL CALLING REQUEST =====");
+        ;
 
         return chatClient
                 .prompt()
@@ -70,6 +72,15 @@ public class ToolController {
             @RequestParam String message) {
 
         logger.info("===== MCP TOOL CALLING REQUEST =====");
+
+        ToolCallback[] callbacks = mcpTools.getToolCallbacks();
+
+        for (ToolCallback tool : callbacks) {
+            logger.info(
+                    "MCP TOOL DISCOVERED: {}",
+                    tool.getToolDefinition().name()
+            );
+        }
 
         return chatClient
                 .prompt()

@@ -38,35 +38,25 @@ public class PdfDocumentLoader {
     public void loadPDF() {
 
         // PDF → Documents
-        TikaDocumentReader reader =
-                new TikaDocumentReader(policyFile);
+        TikaDocumentReader reader = new TikaDocumentReader(policyFile);
 
-        List<Document> documents =
-                reader.get();
+        List<Document> documents = reader.get();
 
-        logger.info(
-                "PDF loaded: {} documents",
-                documents.size()
-        );
+        logger.info("PDF loaded: {} documents", documents.size());
 
         // Add document-level metadata
         logger.info("Adding/Enriching Metadata");
 
-        documents =
-                metadataEnricher.enrich(documents);
+        documents = metadataEnricher.enrich(documents);
 
         // Documents → Section-aware Chunks
         logger.info("Documents Chunking");
 
-        List<Document> chunks =
-                documentChunker.chunk(documents);
+        List<Document> chunks = documentChunker.chunk(documents);
 
         // Chunks → Embeddings → Vector DB
         vectorStoreService.store(chunks);
 
-        logger.info(
-                "Ingestion completed: {} chunks stored",
-                chunks.size()
-        );
+        logger.info( "Ingestion completed: {} chunks stored", chunks.size());
     }
 }
