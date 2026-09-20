@@ -1,22 +1,39 @@
 package com.mcp.mcp_tool_server.service;
 
-import org.springframework.stereotype.Component;
+import com.mcp.mcp_tool_server.exception.InvalidToolArgumentException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
-@Component
+import java.util.regex.Pattern;
+
+@Service
 public class EmployeeInputValidator {
+    private static final Logger logger =
+            LoggerFactory.getLogger(EmployeeInputValidator.class);
 
-    public void validateEmployeeId(String employeeId) {
+    private static final Pattern EMPLOYEE_ID_PATTERN =
+            Pattern.compile("^E\\d{4}$");
+
+    public String validateAndNormalize(String employeeId) {
 
         if (employeeId == null || employeeId.isBlank()) {
-            throw new IllegalArgumentException(
-                    "employeeId must not be blank");
+//            logger.warn(
+//                    "INVALID_ARGUMENT: Employee ID is missing"
+//            ); //THIS SHOWS ON CONSOLE
+            throw new InvalidToolArgumentException("Employee ID is required");
         }
 
-        String normalized = employeeId.trim();
+        String normalizedEmployeeId = employeeId.trim().toUpperCase();
 
-        if (!normalized.matches("E\\d{4}")) {
-            throw new IllegalArgumentException(
-                    "employeeId must have format E####, for example E1001");
+        if (!EMPLOYEE_ID_PATTERN.matcher(normalizedEmployeeId).matches()) {
+//            logger.warn(
+//                    "INVALID_ARGUMENT: employeeId={} does not match E####",
+//                    normalizedEmployeeId
+//            ); //THIS SHOWS ON CONSOLE
+            throw new InvalidToolArgumentException("Employee ID must follow format E####");
         }
+
+        return normalizedEmployeeId;
     }
 }

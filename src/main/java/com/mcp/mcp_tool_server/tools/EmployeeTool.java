@@ -1,21 +1,21 @@
 package com.mcp.mcp_tool_server.tools;
 
-
 import com.mcp.mcp_tool_server.audit.ToolAuditService;
+import com.mcp.mcp_tool_server.exception.ToolErrorCode;
+import com.mcp.mcp_tool_server.exception.ToolExecutionException;
 import com.mcp.mcp_tool_server.model.EmployeeResponse;
 import com.mcp.mcp_tool_server.security.ToolAuthorizationService;
 import com.mcp.mcp_tool_server.service.EmployeeInputValidator;
 import com.mcp.mcp_tool_server.service.EmployeeService;
-import com.mcp.mcp_tool_server.tools.datetime.CurrentDateTimeMcpTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
-import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 @Component
 public class EmployeeTool {
+
     private static final Logger logger =
             LoggerFactory.getLogger(EmployeeTool.class);
 
@@ -40,79 +40,71 @@ public class EmployeeTool {
 
     @McpTool(
             name = TOOL_NAME,
-            description = "Find an employee using their employee ID. "
-                    + "Use this tool when you need basic employee information."
+            description =
+                    "Find an employee using their employee ID. "
+                            + "Use this tool when you need basic employee information."
     )
     public EmployeeResponse findEmployee(
             @McpToolParam(
-                    description = "Employee ID in the format E####, for example E1001",
+                    description ="Employee ID in the format E####, for example E1001",
                     required = true
             )
             String employeeId) {
 
         String user = "mcp-client";
 
-        logger.info("========== MCP TOOL CALLED ==========");
-        logger.info("Tool       : {}", TOOL_NAME);
-        logger.info("Employee ID: {}", employeeId);
-        logger.info("User       : {}", user);
+        logger.info(
+                "MCP tool called: tool={}, employeeId={}, user={}",
+                TOOL_NAME,
+                employeeId,
+                user
+        );
 
-        try {
+        // 1. Authorization
+        if (!toolAuthorizationService.isToolAllowed(TOOL_NAME)) {
 
-            if (!toolAuthorizationService.isToolAllowed(TOOL_NAME)) {
-                logger.warn("Tool denied: {}", TOOL_NAME);
-
-                auditService.logToolInvocation(
-                        TOOL_NAME,
-                        user,
-                        employeeId,
-                        "DENIED - TOOL NOT ALLOWED"
-                );
-
-                throw new SecurityException(
-                        "Tool is not allowed: " + TOOL_NAME);
-            }
-
-            inputValidator.validateEmployeeId(employeeId);
-
-            String normalizedEmployeeId =
-                    employeeId.trim().toUpperCase();
-
-            logger.info("Normalized Employee ID: {}", normalizedEmployeeId);
-
-            EmployeeResponse response =
-                    employeeService.findEmployee(normalizedEmployeeId);
-
-            logger.info("Employee found successfully: {}",
-                    normalizedEmployeeId);
-
-            auditService.logToolInvocation(
+            logger.warn(
+                    "MCP tool authorization denied: tool={}, user={}",
                     TOOL_NAME,
-                    user,
-                    normalizedEmployeeId,
-                    "SUCCESS"
-            );
-
-            logger.info("========== MCP TOOL COMPLETED ==========");
-
-            return response;
-
-        } catch (RuntimeException runtimeException) {
-
-            logger.error(
-                    "MCP TOOL FAILED: {} - {}",
-                    TOOL_NAME,
-                    runtimeException.getMessage()
+                    user
             );
 
             auditService.logToolInvocation(
                     TOOL_NAME,
                     user,
                     employeeId,
-                    "FAILED - " + runtimeException.getMessage()
+                    "DENIED"
             );
 
-            throw runtimeException;
+            throw new ToolExecutionException(
+                    ToolErrorCode.UNAUTHORIZED,
+                    "Tool is not authorized"
+            );
         }
+
+        // 2. Validation + normalization
+        String normalizedEmployeeId =
+                inputValidator.validateAndNormalize(employeeId);
+
+        // 3. Business operation
+        EmployeeResponse response =
+                employeeService.findEmployee(normalizedEmployeeId);
+
+        // 4. Success logging/audit
+        logger.info(
+                "MCP tool completed successfully: tool={}, employeeId={}, user={}",
+                TOOL_NAME,
+                normalizedEmployeeId,
+                user
+        );
+
+        auditService.logToolInvocation(
+                TOOL_NAME,
+                user,
+                normalizedEmployeeId,
+                "SUCCESS"
+        );
+
+        return response;
     }
 }

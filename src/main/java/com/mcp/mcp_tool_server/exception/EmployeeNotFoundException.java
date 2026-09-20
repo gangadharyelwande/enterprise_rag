@@ -1,4 +1,4 @@
-package com.mcp.mcp_tool_server.service;
+package com.mcp.mcp_tool_server.exception;
 
 public class EmployeeNotFoundException extends RuntimeException {
 
