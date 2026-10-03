@@ -1,4 +1,4 @@
-package com.ai.enterprise_rag.infrastructure.tools;
+package com.ai.enterprise_rag.infrastructure.tools.datetime;
 
 public record CurrentDateTimeResponse(
         String location,

@@ -83,11 +83,11 @@ public class DocumentChunker {
      * Chunk B → section=4
      */
     public List<Document> chunk(List<Document> documents) {
+        logger.info("Chunking started-->");
 
         // STEP 1:
         // Convert the large document into separate section-level Documents.
-        List<Document> sectionDocuments =
-                splitIntoSections(documents);
+        List<Document> sectionDocuments =splitIntoSections(documents);
 
         // Final list containing all token-level chunks.
         List<Document> chunks = new ArrayList<>();
@@ -99,8 +99,7 @@ public class DocumentChunker {
         // already belongs to that particular section.
         for (Document sectionDocument : sectionDocuments) {
 
-            List<Document> sectionChunks =
-                    splitter.split(List.of(sectionDocument));
+            List<Document> sectionChunks = splitter.split(List.of(sectionDocument));
 
             chunks.addAll(sectionChunks);
         }
@@ -344,6 +343,7 @@ public class DocumentChunker {
                 );
             }
         }
+        logger.info("Chunking Finished-->");
 
         return sections;
     }
