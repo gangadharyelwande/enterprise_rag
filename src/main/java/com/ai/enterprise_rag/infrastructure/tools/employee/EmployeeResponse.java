@@ -2,8 +2,10 @@ package com.ai.enterprise_rag.infrastructure.tools.employee;
 
 public record EmployeeResponse(
         String employeeId,
-        String name,
+        String firstName,
+        String lastName,
         String department,
-        int leaveBalance
+        String jobTitle,
+        String email
 ) {
 }

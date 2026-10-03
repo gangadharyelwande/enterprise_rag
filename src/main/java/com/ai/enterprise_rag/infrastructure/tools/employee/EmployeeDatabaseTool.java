@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class EmployeeDatabaseTool {
+
     private static final Logger logger =
             LoggerFactory.getLogger(EmployeeDatabaseTool.class);
 
@@ -19,57 +20,74 @@ public class EmployeeDatabaseTool {
     }
 
     @Tool(description = "Get the remaining leave balance for an employee.")
-    public ToolResult<EmployeeResponse> getEmployeeLeaveBalance(
-            @ToolParam(description = "Employee ID such as E101", required = true) String employeeId) {
+    public ToolResult<LeaveBalanceResponse> getEmployeeLeaveBalance(
+            @ToolParam(
+                    description = "Employee ID such as E101",
+                    required = true
+            )
+            String employeeId) {
 
-        logger.info("Tool called: getEmployeeLeaveBalance, employeeId={}",employeeId);
+        logger.info(
+                "Tool called: getEmployeeLeaveBalance, employeeId={}",
+                employeeId
+        );
 
-        // -----------------------------------------
-        // 1. INPUT / SCHEMA-LEVEL VALIDATION
-        // -----------------------------------------
-
+        // 1. Input validation
         if (employeeId == null || employeeId.isBlank()) {
-            logger.warn("Invalid employeeId: missing or blank");
 
-            return ToolResult.error("INVALID_ARGUMENT","employeeId is required.");
+            logger.warn(
+                    "Invalid employeeId: missing or blank"
+            );
+
+            return ToolResult.error(
+                    "INVALID_ARGUMENT",
+                    "employeeId is required."
+            );
         }
 
-        String normalizedEmployeeId = employeeId.trim().toUpperCase();
+        String normalizedEmployeeId =
+                employeeId.trim().toUpperCase();
 
-        // -----------------------------------------
-        // 2. BUSINESS VALIDATION
-        // -----------------------------------------
-        logger.info("Before calling H2 DB-->");
-        var employee = employeeRepository.findById(normalizedEmployeeId);
-        logger.info("After calling H2 DB-->");
+        // 2. Database lookup
+        logger.info("Before calling H2 DB -->");
+
+        var employee =
+                employeeRepository.findById(normalizedEmployeeId);
+
+        logger.info("After calling H2 DB -->");
 
         if (employee.isEmpty()) {
-            logger.warn("Business validation failed: employee not found, employeeId={}",normalizedEmployeeId);
 
-            return ToolResult.error("EMPLOYEE_NOT_FOUND","Employee " + normalizedEmployeeId + " was not found.");
+            logger.warn(
+                    "Employee not found, employeeId={}",
+                    normalizedEmployeeId
+            );
+
+            return ToolResult.error(
+                    "EMPLOYEE_NOT_FOUND",
+                    "Employee "
+                            + normalizedEmployeeId
+                            + " was not found."
+            );
         }
 
-        // -----------------------------------------
-        // 3. EXECUTION
-        // -----------------------------------------
-
+        // 3. Get employee data
         Employee employeeData = employee.get();
 
-        EmployeeResponse response =
-                new EmployeeResponse(
+        // 4. Create leave-balance response
+        LeaveBalanceResponse response =
+                new LeaveBalanceResponse(
                         employeeData.getEmployeeId(),
-                        employeeData.getName(),
-                        employeeData.getDepartment(),
                         employeeData.getLeaveBalance()
                 );
 
         logger.info(
-                "Employee found: {}, leaveBalance={}",
+                "Leave balance found: employeeId={}, leaveBalance={}",
                 response.employeeId(),
                 response.leaveBalance()
         );
 
-        // 4. Return structured result
+        // 5. Return structured result
         return ToolResult.success(response);
     }
 }

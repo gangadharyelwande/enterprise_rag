@@ -26,7 +26,6 @@ public class SimilaritySearchService {
     private final RerankingService rerankingService;
     private final ContextCompressionService contextCompressionService;
 
-    private final boolean rerankingEnabled = true;
     private final int candidateTopK = 10;
     private final int finalTopK = 3;
 
@@ -81,30 +80,22 @@ public class SimilaritySearchService {
         List<Document> finalDocuments;
 
         // 5. Reranker reorders candidates based on relevance.
-        if (rerankingEnabled) {
-            finalDocuments = rerankingService.rerank(
-                    query,
-                    hybridCandidates,
-                    finalTopK
-            );
+        boolean rerankingEnabled = true;
+        finalDocuments = rerankingService.rerank(
+                query,
+                hybridCandidates,
+                finalTopK
+        );
 
-            logDocuments("RERANKED", finalDocuments);
+        logDocuments("RERANKED", finalDocuments);
 
-            // Remove irrelevant content from the selected chunks.
-            finalDocuments = contextCompressionService.compress(
-                    query,
-                    finalDocuments
-            );
+        // Remove irrelevant content from the selected chunks.
+        finalDocuments = contextCompressionService.compress(
+                query,
+                finalDocuments
+        );
 
-            logDocuments("AFTER COMPRESSION", finalDocuments);
-
-        } else {
-            finalDocuments = hybridCandidates.stream()
-                    .limit(finalTopK)
-                    .toList();
-
-            logDocuments("FINAL WITHOUT RERANKING", finalDocuments);
-        }
+        logDocuments("AFTER COMPRESSION", finalDocuments);
 
         // 6. Only the final Top-K chunks continue to the next RAG stage.
         logger.info("FINAL TOP {}: {} documents", finalTopK, finalDocuments.size());
