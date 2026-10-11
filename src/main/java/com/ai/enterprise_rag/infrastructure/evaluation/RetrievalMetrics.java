@@ -1,5 +1,7 @@
+
 package com.ai.enterprise_rag.infrastructure.evaluation;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -12,52 +14,115 @@ public final class RetrievalMetrics {
             Set<String> expected,
             List<String> retrieved) {
 
+        if (expected == null
+                || expected.isEmpty()
+                || retrieved == null
+                || retrieved.isEmpty()) {
+            return false;
+        }
+
+        Set<String> normalizedExpected =
+                normalizeExpected(expected);
+
         return retrieved.stream()
-                .anyMatch(expected::contains);
+                .map(SectionNormalizer::normalize)
+                .filter(section -> !section.isEmpty())
+                .anyMatch(normalizedExpected::contains);
     }
 
     public static double recall(
             Set<String> expected,
             List<String> retrieved) {
 
-        if (expected.isEmpty()) {
+        if (expected == null || expected.isEmpty()) {
             return 0.0;
         }
 
-        long relevantRetrieved =
-                retrieved.stream()
-                        .filter(expected::contains)
-                        .distinct()
-                        .count();
+        Set<String> normalizedExpected =
+                normalizeExpected(expected);
+
+        if (retrieved == null || retrieved.isEmpty()) {
+            return 0.0;
+        }
+
+        Set<String> normalizedRetrieved = new HashSet<>();
+
+        for (String section : retrieved) {
+            String normalized =
+                    SectionNormalizer.normalize(section);
+
+            if (!normalized.isEmpty()) {
+                normalizedRetrieved.add(normalized);
+            }
+        }
+
+        long relevantRetrieved = normalizedRetrieved.stream()
+                .filter(normalizedExpected::contains)
+                .count();
 
         return (double) relevantRetrieved
-                / expected.size();
+                / normalizedExpected.size();
     }
 
     public static double precision(
             Set<String> expected,
             List<String> retrieved) {
 
-        if (retrieved.isEmpty()) {
+        if (expected == null
+                || expected.isEmpty()
+                || retrieved == null
+                || retrieved.isEmpty()) {
             return 0.0;
         }
 
-        long relevantRetrieved =
-                retrieved.stream()
-                        .filter(expected::contains)
-                        .count();
+        Set<String> normalizedExpected =
+                normalizeExpected(expected);
 
-        return (double) relevantRetrieved
-                / retrieved.size();
+        long validRetrievedCount = 0;
+        long relevantRetrievedCount = 0;
+
+        for (String section : retrieved) {
+            String normalized =
+                    SectionNormalizer.normalize(section);
+
+            if (normalized.isEmpty()) {
+                continue;
+            }
+
+            validRetrievedCount++;
+
+            if (normalizedExpected.contains(normalized)) {
+                relevantRetrievedCount++;
+            }
+        }
+
+        if (validRetrievedCount == 0) {
+            return 0.0;
+        }
+
+        return (double) relevantRetrievedCount
+                / validRetrievedCount;
     }
 
     public static int firstRelevantRank(
             Set<String> expected,
             List<String> retrieved) {
 
-        for (int i = 0; i < retrieved.size(); i++) {
+        if (expected == null
+                || expected.isEmpty()
+                || retrieved == null) {
+            return 0;
+        }
 
-            if (expected.contains(retrieved.get(i))) {
+        Set<String> normalizedExpected =
+                normalizeExpected(expected);
+
+        for (int i = 0; i < retrieved.size(); i++) {
+            String normalized =
+                    SectionNormalizer.normalize(retrieved.get(i));
+
+            if (!normalized.isEmpty()
+                    && normalizedExpected.contains(normalized)) {
                 return i + 1;
             }
         }
@@ -69,13 +134,24 @@ public final class RetrievalMetrics {
             Set<String> expected,
             List<String> retrieved) {
 
-        int rank =
-                firstRelevantRank(expected, retrieved);
+        int rank = firstRelevantRank(expected, retrieved);
 
-        if (rank == 0) {
-            return 0.0;
+        return rank == 0 ? 0.0 : 1.0 / rank;
+    }
+
+    private static Set<String> normalizeExpected(
+            Set<String> expected) {
+
+        Set<String> normalized = new HashSet<>();
+
+        for (String section : expected) {
+            String value = SectionNormalizer.normalize(section);
+
+            if (!value.isEmpty()) {
+                normalized.add(value);
+            }
         }
 
-        return 1.0 / rank;
+        return normalized;
     }
 }

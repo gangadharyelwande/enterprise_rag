@@ -34,7 +34,8 @@ public class SimilaritySearchService {
             VectorStore vectorStore,
             RerankingService rerankingService,
             KeywordSearchService keywordSearchService,
-            VectorStoreService vectorStoreService, ContextCompressionService contextCompressionService) {
+            VectorStoreService vectorStoreService,
+            ContextCompressionService contextCompressionService) {
 
         this.queryRewriteService = queryRewriteService;
         this.vectorStore = vectorStore;
@@ -44,73 +45,150 @@ public class SimilaritySearchService {
         this.contextCompressionService = contextCompressionService;
     }
 
+    /**
+     * Existing public search method.
+     *
+     * This method performs query rewriting internally.
+     */
     public List<Document> search(String question) {
 
         if (question == null || question.isBlank()) {
-            throw new IllegalArgumentException("Question must not be blank");
+            throw new IllegalArgumentException(
+                    "Question must not be blank"
+            );
+        }
+
+        String query =
+                queryRewriteService.rewrite(question);
+
+        return searchRewrittenQuery(query);
+    }
+
+    /**
+     * Performs retrieval using a query that has already
+     * been rewritten by the caller.
+     *
+     * This prevents QueryRewriteService from being called twice
+     * when used inside RagWorkflow.
+     */
+    public List<Document> searchRewrittenQuery(String query) {
+
+        if (query == null || query.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Retrieval query must not be blank"
+            );
         }
 
         logger.info("========== RETRIEVAL START ==========");
-        logger.info("QUESTION: {}", question);
+        logger.info("RETRIEVAL QUERY: {}", query);
 
-        // 1. Rewrite the question into a retrieval-friendly query.
-        String query = queryRewriteService.rewrite(question);
-        logger.info("QUERY REWRITE: {}", query);
+        // -------------------------------------------------
+        // 1. Semantic / vector search
+        // -------------------------------------------------
 
-        // 2. Semantic/vector search finds documents by meaning.
-        List<Document> vectorResults = vectorSearch(query, candidateTopK);
-        logDocuments("VECTOR SEARCH", vectorResults);
+        List<Document> vectorResults =
+                vectorSearch(
+                        query,
+                        candidateTopK
+                );
 
-        // 3. Keyword search finds documents containing exact terms.
-        List<Document> keywordResults = keywordSearchService.search(
-                query,
-                vectorStoreService.getDocuments(),
-                candidateTopK
+        logDocuments(
+                "VECTOR SEARCH",
+                vectorResults
         );
-        logDocuments("KEYWORD SEARCH", keywordResults);
 
-        // 4. Combine both result sets and remove duplicate documents.
+        // -------------------------------------------------
+        // 2. Keyword search
+        // -------------------------------------------------
+
+        List<Document> keywordResults =
+                keywordSearchService.search(
+                        query,
+                        vectorStoreService.getDocuments(),
+                        candidateTopK
+                );
+
+        logDocuments(
+                "KEYWORD SEARCH",
+                keywordResults
+        );
+
+        // -------------------------------------------------
+        // 3. Hybrid merge + deduplication
+        // -------------------------------------------------
+
         List<Document> hybridCandidates =
-                combineResults(vectorResults, keywordResults);
+                combineResults(
+                        vectorResults,
+                        keywordResults
+                );
 
-        logger.info("COMBINE + DEDUPLICATE: {} candidates",
-                hybridCandidates.size());
-        logDocuments("HYBRID CANDIDATES", hybridCandidates);
-
-        List<Document> finalDocuments;
-
-        // 5. Reranker reorders candidates based on relevance.
-        boolean rerankingEnabled = true;
-        finalDocuments = rerankingService.rerank(
-                query,
-                hybridCandidates,
-                finalTopK
+        logger.info(
+                "COMBINE + DEDUPLICATE: {} candidates",
+                hybridCandidates.size()
         );
 
-        logDocuments("RERANKED", finalDocuments);
+        logDocuments(
+                "HYBRID CANDIDATES",
+                hybridCandidates
+        );
 
-        // Remove irrelevant content from the selected chunks.
-        finalDocuments = contextCompressionService.compress(
-                query,
+        // -------------------------------------------------
+        // 4. Reranking
+        // -------------------------------------------------
+
+        List<Document> rerankedDocuments =
+                rerankingService.rerank(
+                        query,
+                        hybridCandidates,
+                        finalTopK
+                );
+
+        logDocuments(
+                "RERANKED",
+                rerankedDocuments
+        );
+
+        // -------------------------------------------------
+        // 5. Context compression
+        // -------------------------------------------------
+
+        List<Document> finalDocuments =
+                contextCompressionService.compress(
+                        query,
+                        rerankedDocuments
+                );
+
+        logDocuments(
+                "AFTER COMPRESSION",
                 finalDocuments
         );
 
-        logDocuments("AFTER COMPRESSION", finalDocuments);
+        // -------------------------------------------------
+        // 6. Final Top-K documents
+        // -------------------------------------------------
 
-        // 6. Only the final Top-K chunks continue to the next RAG stage.
-        logger.info("FINAL TOP {}: {} documents", finalTopK, finalDocuments.size());
+        logger.info(
+                "FINAL TOP {}: {} documents",
+                finalTopK,
+                finalDocuments.size()
+        );
+
         logger.info("========== RETRIEVAL END ==========");
 
         return finalDocuments;
     }
 
-    private List<Document> vectorSearch(String query, int topK) {
+    private List<Document> vectorSearch(
+            String query,
+            int topK) {
 
-        SearchRequest request = SearchRequest.builder()
-                .query(query)
-                .topK(topK)
-                .similarityThreshold(0.75)
-                .build();
+        SearchRequest request =
+                SearchRequest.builder()
+                        .query(query)
+                        .topK(topK)
+                        .similarityThreshold(0.75)
+                        .build();
 
         return vectorStore.similaritySearch(request);
     }
@@ -119,32 +197,57 @@ public class SimilaritySearchService {
             List<Document> vectorResults,
             List<Document> keywordResults) {
 
-        Map<String, Document> uniqueDocuments = new LinkedHashMap<>();
+        Map<String, Document> uniqueDocuments =
+                new LinkedHashMap<>();
 
-        // Vector results are added first.
-        vectorResults.forEach(d -> uniqueDocuments.put(d.getId(), d));
+        // Vector results first
+        vectorResults.forEach(
+                document ->
+                        uniqueDocuments.put(
+                                document.getId(),
+                                document
+                        )
+        );
 
-        // Keyword results are added only if not already present.
-        keywordResults.forEach(d ->
-                uniqueDocuments.putIfAbsent(d.getId(), d));
+        // Add keyword results only when not already present
+        keywordResults.forEach(
+                document ->
+                        uniqueDocuments.putIfAbsent(
+                                document.getId(),
+                                document
+                        )
+        );
 
-        return new ArrayList<>(uniqueDocuments.values());
+        return new ArrayList<>(
+                uniqueDocuments.values()
+        );
     }
 
-    private void logDocuments(String stage, List<Document> documents) {
+    private void logDocuments(
+            String stage,
+            List<Document> documents) {
 
-        logger.info("----- {} -----", stage);
+        logger.info(
+                "----- {} -----",
+                stage
+        );
 
-        for (int i = 0; i < documents.size(); i++) {
-            Document d = documents.get(i);
+        for (int i = 0;
+             i < documents.size();
+             i++) {
+
+            Document document =
+                    documents.get(i);
 
             logger.info(
                     "#{} | id={} | vector={} | keyword={} | rerank={}",
                     i + 1,
-                    d.getId(),
-                    d.getScore(),
-                    d.getMetadata().get("keywordScore"),
-                    d.getMetadata().get("rerankScore")
+                    document.getId(),
+                    document.getScore(),
+                    document.getMetadata()
+                            .get("keywordScore"),
+                    document.getMetadata()
+                            .get("rerankScore")
             );
         }
     }
