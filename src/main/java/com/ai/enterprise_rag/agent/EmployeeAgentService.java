@@ -1,5 +1,6 @@
 package com.ai.enterprise_rag.agent;
 
+import com.ai.enterprise_rag.agent.tools.EnterpriseRagTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -15,13 +16,16 @@ public class EmployeeAgentService {
 
     private final ChatClient chatClient;
     private final ToolCallbackProvider mcpTools;
+    private final EnterpriseRagTool enterpriseRagTool;
 
     public EmployeeAgentService(
             ChatClient chatClient,
-            ToolCallbackProvider mcpTools) {
+            ToolCallbackProvider mcpTools,
+            EnterpriseRagTool enterpriseRagTool) {
 
         this.chatClient = chatClient;
         this.mcpTools = mcpTools;
+        this.enterpriseRagTool = enterpriseRagTool;
     }
 
     public String execute(String userMessage) {
@@ -29,27 +33,31 @@ public class EmployeeAgentService {
         logger.info("===== EMPLOYEE AGENT REQUEST =====");
         logger.info("User message: {}", userMessage);
 
-        logAvailableTools();
+        for (ToolCallback tool : mcpTools.getToolCallbacks()) {
+
+            logger.info(
+                    "AGENT MCP TOOL AVAILABLE: {}",
+                    tool.getToolDefinition().name()
+            );
+        }
+
+        logger.info(
+                "AGENT RAG TOOL AVAILABLE: searchEnterpriseKnowledge"
+        );
 
         String response = chatClient
                 .prompt()
                 .system(EmployeeAgentPrompt.SYSTEM_PROMPT)
                 .user(userMessage)
-                .tools(mcpTools)
+                .tools(
+                        enterpriseRagTool,
+                        mcpTools
+                )
                 .call()
                 .content();
 
         logger.info("===== EMPLOYEE AGENT COMPLETED =====");
 
         return response;
-    }
-
-    private void logAvailableTools() {
-
-        ToolCallback[] callbacks = mcpTools.getToolCallbacks();
-
-        for (ToolCallback tool : callbacks) {
-            logger.info("AGENT TOOL AVAILABLE: {}",tool.getToolDefinition().name());
-        }
     }
 }

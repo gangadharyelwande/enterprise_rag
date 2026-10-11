@@ -1,6 +1,7 @@
 package com.ai.enterprise_rag.workflow;
 
-import com.ai.enterprise_rag.infrastructure.tools.employee.EmployeeResponse;
+import com.ai.enterprise_rag.evaluation.agent.AgentExecutionTrace;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,174 +9,194 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
-public class EmployeeWorkflow implements Workflow {
+public class EmployeeWorkflow {
 
     private static final Logger logger =
             LoggerFactory.getLogger(EmployeeWorkflow.class);
 
     private static final Pattern EMPLOYEE_ID_PATTERN =
-            Pattern.compile("\\bE\\d{4}\\b", Pattern.CASE_INSENSITIVE);
+            Pattern.compile(
+                    "\\bE\\d{4}\\b",
+                    Pattern.CASE_INSENSITIVE
+            );
 
     private final ToolCallbackProvider mcpTools;
     private final ObjectMapper objectMapper;
 
-    public EmployeeWorkflow(ToolCallbackProvider mcpTools) {
+    public EmployeeWorkflow(
+            ToolCallbackProvider mcpTools,
+            ObjectMapper objectMapper) {
 
         this.mcpTools = mcpTools;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
-    @Override
-    public WorkflowState execute(WorkflowState state) {
+    /**
+     * Executes the employee branch independently.
+     *
+     * Important:
+     * This method does NOT modify a shared WorkflowState.
+     * It produces its own EmployeeResult.
+     */
+    public EmployeeResult execute(String request) {
+        return execute(request, null);
+    }
+
+    public EmployeeResult execute(String request, AgentExecutionTrace trace) {
+
+        long startTime = System.nanoTime();
 
         logger.info("===== EMPLOYEE WORKFLOW START =====");
 
-        String request = state.getOriginalRequest();
-
-        logger.info("Employee workflow request: {}",request
+        logger.info(
+                "Employee workflow thread: {}",
+                Thread.currentThread().getName()
         );
 
-        // 1. Record workflow execution
-        state.addHistory("Employee workflow started");
-
-        // 2. Extract employee ID
-        String employeeId = extractEmployeeId(request);
-
-        logger.info("Employee ID extracted: {}",employeeId);
-
-        state.setEmployeeId(employeeId);
-
-        state.addHistory("Employee ID extracted: " + employeeId);
-
-        // 3. Find employee using MCP
-        logger.info("Looking for MCP tool: findEmployee");
-
-        ToolCallback employeeTool = findTool("findEmployee");
-
-        logger.info("MCP tool found: {}",employeeTool.getToolDefinition().name());
-        logger.info("Calling MCP tool findEmployee for employee: {}",employeeId);
-
         try {
-            String employeeResult = employeeTool.call(
-                    "{\"employeeId\":\"" + employeeId + "\"}"
-            );
-
-            String employeeJson = McpToolResultParser.extractText(employeeResult);
-
-            logger.info("Parsed employee result: {}",employeeJson);
-
-            // Convert MCP result into EmployeeResponse
-            EmployeeResponse employee;
-
-            try {
-
-                employee = objectMapper.readValue(
-                        employeeJson,
-                        EmployeeResponse.class
-                );
-
-            } catch (Exception exception) {
-                logger.error("Failed to parse employee MCP result",exception);
-                throw new IllegalStateException("Unable to parse employee information",exception);
-            }
-
-            // Store employee result in workflow state
-            state.setEmployee(employee);
-            state.addHistory("findEmployee completed for " + employeeId);
 
             logger.info(
-                    "Employee state updated: {} {}",
-                    employee.employeeId(),
-                    employee.department()
+                    "Employee request: {}",
+                    request
             );
 
-        }catch (Exception exception) {
+            // -------------------------------------------------
+            // Step 1: Extract employee ID from the request
+            // -------------------------------------------------
 
-                logger.error(
-                        "findEmployee failed for employeeId={}",
-                        employeeId,
-                        exception
+            Matcher matcher =
+                    EMPLOYEE_ID_PATTERN.matcher(request);
+
+            if (!matcher.find()) {
+
+                throw new IllegalArgumentException(
+                        "No valid employee ID found in request: "
+                                + request
                 );
-
-                state.addHistory("findEmployee failed for " + employeeId);
-                throw exception;
             }
 
-        // 4. Get employee working hours using MCP
-        logger.info("Looking for MCP tool: employeeWorkingHours");
+            String employeeId =
+                    matcher.group().toUpperCase();
 
-        ToolCallback workingHoursTool = findTool("employeeWorkingHours");
+            logger.info(
+                    "Extracted employeeId: {}",
+                    employeeId
+            );
+            if (trace != null) trace.event("EMPLOYEE_ID_EXTRACTED", employeeId, "Employee identifier extracted from request", true);
 
-        logger.info("MCP tool found: {}",workingHoursTool.getToolDefinition().name());
-        logger.info("Calling MCP tool employeeWorkingHours for employee: {}",employeeId);
+            // -------------------------------------------------
+            // Step 2: Find MCP tool
+            // -------------------------------------------------
 
-        String workingHoursResult =
-                workingHoursTool.call(
-                        "{\"employeeId\":\"" + employeeId + "\"}"
+            ToolCallback employeeTool =
+                    findTool("findEmployee");
+
+            if (employeeTool == null) {
+
+                throw new IllegalStateException(
+                        "findEmployee MCP tool not available"
                 );
+            }
 
-        String workingHours =
-                McpToolResultParser.extractText(
-                        workingHoursResult
-                );
+            // -------------------------------------------------
+            // Step 3: Build MCP arguments
+            // -------------------------------------------------
 
-        logger.info("Parsed working hours: {}",workingHours);
+            String arguments =
+                    objectMapper.writeValueAsString(
+                            Map.of(
+                                    "employeeId",
+                                    employeeId
+                            )
+                    );
 
-        // Store working hours in workflow state
-        state.setWorkingHours(workingHours);
-        state.addHistory("employeeWorkingHours completed for " + employeeId);
+            logger.info(
+                    "Calling MCP findEmployee with arguments: {}",
+                    arguments
+            );
 
-        logger.info("Working hours state updated");
+            // -------------------------------------------------
+            // Step 4: Optional deterministic evaluation fault
+            // -------------------------------------------------
+            // This is scoped to the AgentExecutionTrace created for one evaluation case.
+            // It does not configure or mutate the shared MCP server failure simulator.
+            if (trace != null && trace.shouldSimulateToolFailure("findEmployee")) {
+                String message = "Simulated tool outage for evaluation: findEmployee";
+                trace.toolCall("findEmployee", arguments, message, false, 0);
+                trace.event("SIMULATED_TOOL_FAILURE", "findEmployee", message, false);
+                logger.warn("Evaluation fault injection: failing findEmployee before MCP call");
+                throw new IllegalStateException(message);
+            }
 
-        // 5. Workflow completed
-        state.addHistory("Employee workflow completed");
+            // -------------------------------------------------
+            // Step 5: Call MCP
+            // -------------------------------------------------
 
-        logger.info("Employee workflow completed for: {}",employeeId);
-        logger.info("Workflow history: {}",state.getConversationHistory());
+            long toolStart = System.nanoTime();
+            String result;
+            try {
+                result = employeeTool.call(arguments);
+                if (trace != null) trace.toolCall("findEmployee", arguments, result, true, (System.nanoTime() - toolStart) / 1_000_000);
+            } catch (RuntimeException toolException) {
+                if (trace != null) trace.toolCall("findEmployee", arguments, toolException.getMessage(), false, (System.nanoTime() - toolStart) / 1_000_000);
+                throw toolException;
+            }
 
-        logger.info("===== EMPLOYEE WORKFLOW END =====");
+            logger.info(
+                    "MCP findEmployee result: {}",
+                    result
+            );
 
-        return state;
-    }
+            // -------------------------------------------------
+            // Step 5: Return independent result
+            // -------------------------------------------------
 
-    private String extractEmployeeId(String request) {
+            if (trace != null) trace.event("EMPLOYEE_WORKFLOW", "findEmployee", "Employee MCP branch completed", true);
+            return new EmployeeResult(result);
 
-        Matcher matcher =
-                EMPLOYEE_ID_PATTERN.matcher(request);
+        } catch (JsonProcessingException e) {
+            if (trace != null) trace.event("EMPLOYEE_WORKFLOW", "serialization", e.getMessage(), false);
+            throw new RuntimeException(e);
+        } finally {
 
-        if (!matcher.find()) {
+            long durationMillis =
+                    (System.nanoTime() - startTime)
+                            / 1_000_000;
 
-            logger.warn("No valid employee ID found in request");
-            throw new IllegalArgumentException("Employee ID is required. Expected format E1234");
+            logger.info(
+                    "EMPLOYEE workflow END - duration={} ms - thread={}",
+                    durationMillis,
+                    Thread.currentThread().getName()
+            );
+
+            logger.info(
+                    "===== EMPLOYEE WORKFLOW END ====="
+            );
         }
-
-        return matcher.group().toUpperCase();
     }
 
-    private ToolCallback findTool(String toolName) {
+    /**
+     * Finds a specific MCP tool from the discovered tools.
+     */
+    private ToolCallback findTool(String name) {
 
-        logger.info("Searching for MCP tool: {}",toolName);
+        for (ToolCallback callback :
+                mcpTools.getToolCallbacks()) {
 
-        ToolCallback[] callbacks = mcpTools.getToolCallbacks();
+            if (callback.getToolDefinition()
+                    .name()
+                    .equals(name)) {
 
-        logger.info("Total MCP tools available: {}",callbacks.length);
-
-        for (ToolCallback tool : callbacks) {
-
-            String discoveredToolName = tool.getToolDefinition().name();
-
-            logger.info("Available MCP tool: {}",discoveredToolName);
-
-            if (discoveredToolName.equals(toolName)) {
-                return tool;
+                return callback;
             }
         }
 
-        logger.error("Required MCP tool not found: {}",toolName);
-        throw new IllegalStateException("MCP tool not found: " + toolName);
+        return null;
     }
 }
+
